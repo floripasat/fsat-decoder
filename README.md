@@ -1,2 +1,3 @@
-# fsat-decoder
+# FloripaSat Decoder
+
 FloripaSat Packet Decoder
