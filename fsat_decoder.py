@@ -24,7 +24,7 @@ __author__      = "Gabriel Mariano Marcelino - PU5GMA"
 __copyright__   = "Copyright (C) 2019, Universidade Federal de Santa Catarina"
 __credits__     = ["Gabriel Mariano Marcelino - PU5GMA"]
 __license__     = "GPL3"
-__version__     = "0.1.0"
+__version__     = "0.1.1"
 __maintainer__  = "Gabriel Mariano Marcelino - PU5GMA"
 __email__       = "gabriel.marcelino@gmail.com"
 __status__      = "Development"
@@ -35,6 +35,8 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 import os
+from scipy.io import wavfile
+from datetime import datetime
 
 import _version
 
@@ -86,6 +88,7 @@ class FSatDecoder:
 
         # Decode button
         self.button_decode = self.builder.get_object("button_decode")
+        self.button_decode.connect("clicked", self.on_button_decode_clicked)
 
         # Clears button
         self.button_clear = self.builder.get_object("button_clean")
@@ -94,6 +97,19 @@ class FSatDecoder:
         self.toolbutton_about = self.builder.get_object("toolbutton_about")
         self.toolbutton_about.connect("clicked", self.on_toolbutton_about_clicked)
 
+        # Events treeview
+        self.treeview_events = self.builder.get_object("treeview_events")
+        self.listmodel_events = Gtk.ListStore(str, str)
+        self.treeview_events.set_model(self.listmodel_events)
+        cell = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("Datetime", cell, text=0)
+        column.set_fixed_width(250)
+        self.treeview_events.append_column(column)
+        column = Gtk.TreeViewColumn("Event", cell, text=1)
+        self.treeview_events.append_column(column)
+        self.selection_events = self.treeview_events.get_selection()
+        self.selection_events.connect("changed", self.on_events_selection_changed)
+
     def run(self):
         self.window.show_all()
 
@@ -101,6 +117,23 @@ class FSatDecoder:
 
     def destroy(window, self):
         Gtk.main_quit()
+
+    def on_button_decode_clicked(self, button):
+        if self.filechooser_audio_file.get_filename() is None:
+            error_dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, "Error loading the audio file!")
+            error_dialog.format_secondary_text("No file selected!")
+            error_dialog.run()
+            error_dialog.destroy()
+        else:
+            sample_rate, data = wavfile.read(self.filechooser_audio_file.get_filename())
+            self.listmodel_events.append([str(datetime.now()), "Audio file opened with a sample rate of " + str(sample_rate) + " Hz"])
+
+    def on_events_selection_changed(self, widget):
+        (model, iter) = self.selection_events.get_selected()
+        if iter is not None:
+            print(model[iter][0])
+
+        return True
 
     def on_toolbutton_about_clicked(self, toolbutton):
         response = self.aboutdialog.run()
