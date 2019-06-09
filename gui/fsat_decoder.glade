@@ -111,12 +111,6 @@
                             <attribute name="text">0</attribute>
                           </attributes>
                         </child>
-                        <child>
-                          <object class="GtkCellRendererText" id="downlink_packet"/>
-                          <attributes>
-                            <attribute name="text">1</attribute>
-                          </attributes>
-                        </child>
                       </object>
                       <packing>
                         <property name="expand">False</property>
