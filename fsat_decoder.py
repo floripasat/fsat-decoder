@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 #
 #  fsat_decoder.py
 #  
@@ -24,7 +26,7 @@ __author__      = "Gabriel Mariano Marcelino - PU5GMA"
 __copyright__   = "Copyright (C) 2019, Universidade Federal de Santa Catarina"
 __credits__     = ["Gabriel Mariano Marcelino - PU5GMA"]
 __license__     = "GPL3"
-__version__     = "0.1.1"
+__version__     = "0.1.7"
 __maintainer__  = "Gabriel Mariano Marcelino - PU5GMA"
 __email__       = "gabriel.marcelino@gmail.com"
 __status__      = "Development"
@@ -40,11 +42,22 @@ from datetime import datetime
 
 import _version
 
-_UI_FILE_LOCAL          = 'gui/fsat_decoder.glade'
-_UI_FILE_LINUX_SYSTEM   = '/usr/share/fsat-decoder/gui/fsat_decoder.glade'
+_UI_FILE_LOCAL              = 'gui/fsat_decoder.glade'
+_UI_FILE_LINUX_SYSTEM       = '/usr/share/fsat-decoder/gui/fsat_decoder.glade'
 
-_ICON_FILE_LOCAL        = 'icon/fsat_decoder_256x256.png'
-_ICON_FILE_LINUX_SYSTEM = '/usr/share/icons/fsat_decoder_256x256.png'
+_ICON_FILE_LOCAL            = 'icon/fsat_decoder_256x256.png'
+_ICON_FILE_LINUX_SYSTEM     = '/usr/share/icons/fsat_decoder_256x256.png'
+
+_DIR_CONFIG_LINUX           = '.fsat-decoder'
+_DIR_CONFIG_WINDOWS         = 'fsat-decoder'
+
+_DEFAULT_CALLSIGN           = 'PP5UF'
+_DEFAULT_LOCATION           = 'Florianópolis'
+_DEFAULT_COUNTRY            = 'Brazil'
+_DEFAULT_BEACON_BAUDRATE    = 1200
+_DEFAULT_DOWNLINK_BAUDRATE  = 2400
+_DEFAULT_BEACON_SYNC_WORD   = '0x7E2AE65D'
+_DEFAULT_DOWNLINK_SYNC_WORD = '0x7E2AE65D'
 
 class FSatDecoder:
 
@@ -61,6 +74,8 @@ class FSatDecoder:
 
         self._build_widgets()
 
+        self._load_preferences()
+
     def _build_widgets(self):
         # Main window
         self.window = self.builder.get_object("window_main")
@@ -70,12 +85,38 @@ class FSatDecoder:
             self.window.set_icon_from_file(_ICON_FILE_LINUX_SYSTEM)
         self.window.connect("destroy", Gtk.main_quit)
 
+        # Preferences dialog
+        self.dialog_preferences = self.builder.get_object("dialog_preferences")
+        self.button_preferences_ok = self.builder.get_object("button_preferences_ok")
+        self.button_preferences_ok.connect("clicked", self.on_button_preferences_ok_clicked)
+        self.button_preferences_default = self.builder.get_object("button_preferences_default")
+        self.button_preferences_default.connect("clicked", self.on_button_preferences_default_clicked)
+        self.button_preferences_cancel = self.builder.get_object("button_preferences_cancel")
+        self.button_preferences_cancel.connect("clicked", self.on_button_preferences_cancel_clicked)
+
+        self.entry_preferences_general_callsign = self.builder.get_object("entry_preferences_general_callsign")
+        self.entry_preferences_general_location = self.builder.get_object("entry_preferences_general_location")
+        self.entry_preferences_general_country = self.builder.get_object("entry_preferences_general_country")
+
+        self.entry_preferences_beacon_baudrate = self.builder.get_object("entry_preferences_beacon_baudrate")
+        self.entry_preferences_beacon_s0 = self.builder.get_object("entry_preferences_beacon_s0")
+        self.entry_preferences_beacon_s1 = self.builder.get_object("entry_preferences_beacon_s1")
+        self.entry_preferences_beacon_s2 = self.builder.get_object("entry_preferences_beacon_s2")
+        self.entry_preferences_beacon_s3 = self.builder.get_object("entry_preferences_beacon_s3")
+
+        self.entry_preferences_downlink_baudrate = self.builder.get_object("entry_preferences_downlink_baudrate")
+        self.entry_preferences_downlink_s0 = self.builder.get_object("entry_preferences_downlink_s0")
+        self.entry_preferences_downlink_s1 = self.builder.get_object("entry_preferences_downlink_s1")
+        self.entry_preferences_downlink_s2 = self.builder.get_object("entry_preferences_downlink_s2")
+        self.entry_preferences_downlink_s3 = self.builder.get_object("entry_preferences_downlink_s3")
+
         # About dialog
         self.aboutdialog = self.builder.get_object("aboutdialog_fsat_decoder")
         self.aboutdialog.set_version(_version.__version__)
 
         # Preferences button
         self.button_preferences = self.builder.get_object("button_preferences")
+        self.button_preferences.connect("clicked", self.on_button_preferences_clicked)
 
         # Packet type combobox
         self.combobox_packet_type = self.builder.get_object("combobox_packet_type")
@@ -118,6 +159,24 @@ class FSatDecoder:
     def destroy(window, self):
         Gtk.main_quit()
 
+    def on_button_preferences_clicked(self, button):
+        response = self.dialog_preferences.run()
+
+        if response == Gtk.ResponseType.DELETE_EVENT:
+            self._load_preferences()
+            self.dialog_preferences.hide()
+
+    def on_button_preferences_ok_clicked(self, button):
+        self._save_preferences()
+        self.dialog_preferences.hide()
+
+    def on_button_preferences_default_clicked(self, button):
+        self._load_default_preferences()
+
+    def on_button_preferences_cancel_clicked(self, button):
+        self._load_preferences()
+        self.dialog_preferences.hide()
+
     def on_button_decode_clicked(self, button):
         if self.filechooser_audio_file.get_filename() is None:
             error_dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, "Error loading the audio file!")
@@ -140,3 +199,31 @@ class FSatDecoder:
 
         if response == Gtk.ResponseType.DELETE_EVENT:
             self.aboutdialog.hide()
+
+    def _save_preferences(self):
+        home = os.path.expanduser('~')
+        location = os.path.join(home, _DIR_CONFIG_LINUX)
+
+        if not os.path.exists(location):
+            os.mkdir(location)
+
+    def _load_preferences(self):
+        home = os.path.expanduser('~')
+        location = os.path.join(home, _DIR_CONFIG_LINUX)
+
+    def _load_default_preferences(self):
+        self.entry_preferences_general_callsign.set_text(_DEFAULT_CALLSIGN)
+        self.entry_preferences_general_location.set_text(_DEFAULT_LOCATION)
+        self.entry_preferences_general_country.set_text(_DEFAULT_COUNTRY)
+
+        self.entry_preferences_beacon_baudrate.set_text(str(_DEFAULT_BEACON_BAUDRATE))
+        self.entry_preferences_beacon_s0.set_text('0x' + _DEFAULT_BEACON_SYNC_WORD[2:4])
+        self.entry_preferences_beacon_s1.set_text('0x' + _DEFAULT_BEACON_SYNC_WORD[4:6])
+        self.entry_preferences_beacon_s2.set_text('0x' + _DEFAULT_BEACON_SYNC_WORD[6:8])
+        self.entry_preferences_beacon_s3.set_text('0x' + _DEFAULT_BEACON_SYNC_WORD[8:10])
+
+        self.entry_preferences_downlink_baudrate.set_text(str(_DEFAULT_DOWNLINK_BAUDRATE))
+        self.entry_preferences_downlink_s0.set_text('0x' + _DEFAULT_DOWNLINK_SYNC_WORD[2:4])
+        self.entry_preferences_downlink_s1.set_text('0x' + _DEFAULT_DOWNLINK_SYNC_WORD[4:6])
+        self.entry_preferences_downlink_s2.set_text('0x' + _DEFAULT_DOWNLINK_SYNC_WORD[6:8])
+        self.entry_preferences_downlink_s3.set_text('0x' + _DEFAULT_DOWNLINK_SYNC_WORD[8:10])

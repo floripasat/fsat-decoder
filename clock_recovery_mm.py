@@ -24,33 +24,34 @@ __author__      = "Gabriel Mariano Marcelino - PU5GMA"
 __copyright__   = "Copyright (C) 2019, Universidade Federal de Santa Catarina"
 __credits__     = ["Gabriel Mariano Marcelino - PU5GMA"]
 __license__     = "GPL3"
-__version__     = "0.1.3"
+__version__     = "0.1.4"
 __maintainer__  = "Gabriel Mariano Marcelino - PU5GMA"
 __email__       = "gabriel.marcelino@gmail.com"
 __status__      = "Development"
 
+
+from mmse_fir_interpolator_ff import mmse_fir_interpolator
 
 import math
 
 class ClockRecoveryMM:
 
     def __init__(self, omega, gain_omega, mu, gain_mu, omega_relative_limit):
-        self.
         self.d_mu = mu
         self.d_gain_mu = gain_mu
         self.d_gain_omega = gain_omega
         self.d_omega_relative_limit = omega_relative_limit
         self.d_last_sample = 0
-        self.d_interp = 
+        self.d_interp = mmse_fir_interpolator()
 
         if omega < 1:
-            print("Clock rate must be > 0!")
+            raise RuntimeError("Clock rate must be > 0!")
 
         if gain_mu < 0 or gain_omega < 0:
-            print("Gains must be non-negative!")
+            raise RuntimeError("Gains must be non-negative!")
 
-        self.set_omega(omega)   # Also sets min and max omega
-        self.set_inverser_relative_rate(omega)
+        self.set_omega(omega)       # Also sets min and max omega
+#        self._set_inverse_relative_rate(omega)
 
     def set_verbose(self, verbose):
         self.d_verbose = verbose
@@ -58,7 +59,7 @@ class ClockRecoveryMM:
     def set_gain_mu(self, gain_mu):
         self.d_gain_mu = gain_mu
 
-    def set_gain_omega(self, gain_omega);
+    def set_gain_omega(self, gain_omega):
         self.d_gain_omega = gain_omega
 
     def set_mu(self, mu):
@@ -81,28 +82,19 @@ class ClockRecoveryMM:
     def gain_omega(self):
         return self.d_gain_omega
 
-    def run(self, noutput_items, ninput_items, input_items, output_items):
+    def compute(self, inp):
+        output = self.d_interp.interpolate(inp, self.d_mu)
+        mm_val = self._slice(self.d_last_sample) * output - self._slice(output) * self.d_last_sample
+        self.d_last_sample = output
 
-        ii = int(0)     # input index
-        oo = int(0)     # output index
-        ni = ninput_items[0] -  # don't use more input than this 
-        mm_val = float()
+        self.d_omega = self.d_omega + self.d_gain_omega * mm_val
+        self.d_omega = self.d_omega_mid + self._branchless_clip(self.d_omega - self.d_omega_mid, self.d_omega_lim)
+        self.d_mu = self.d_mu + self.d_omega + self.d_gain_mu * mm_val
 
-        while (oo < noutput_items) and (ii < ni):
-            # produce output sample
-            output_items.append()
-            mm_val = self._slice()*output_items[oo] - self._slice(output_items[oo])*self.d_last_sample
-            self.d_last_sample = output_items[oo]
+        ii = ii + int(math.floor(self.d_mu))
+        self.d_mu = self.d_mu - math.floor(self.d_mu)
 
-            self.d_omega = self.d_omega + self.d_gain_omega*mm_val
-            self.d_omega = self.d_omega_mid + self._branchless_clip(self.d_omega - self.d_omega_mid, self.d_omega_lim)
-            self.d_mu = self.d_mu + self.d_omega + self.d_gain_mu*mm_val
-
-            ii = ii + int(math.floor(self.d_mu))
-            self.d_mu = self.d_mu - math.floor(self.d_mu)
-            oo = oo + 1
-
-        return oo
+        return output
 
     def _slice(self, x):
         if x < 0:
