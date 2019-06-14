@@ -1,5 +1,5 @@
 #
-#  _version.py
+#  binary_slicer.py
 #  
 #  Copyright (C) 2019, Universidade Federal de Santa Catarina
 #  
@@ -29,3 +29,14 @@ __maintainer__  = "Gabriel Mariano Marcelino - PU5GMA"
 __email__       = "gabriel.marcelino@gmail.com"
 __status__      = "Development"
 
+
+class BinarySlicer:
+
+    def __init__(self):
+        pass
+
+    def compute(self, data):
+        if data >= 0:
+            return True
+        else:
+            return False
