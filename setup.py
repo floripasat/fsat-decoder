@@ -1,5 +1,7 @@
+#!/usr/bin/end python
+
 #
-#  _version.py
+#  setup.py
 #  
 #  Copyright (C) 2019, Universidade Federal de Santa Catarina
 #  
@@ -29,3 +31,27 @@ __maintainer__  = "Gabriel Mariano Marcelino - PU5GMA"
 __email__       = "gabriel.mm8@gmail.com"
 __status__      = "Development"
 
+
+import setuptools
+
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
+setuptools.setup(
+    name                            = "fsat-decoder",
+    version                         = "0.1.0",
+    author                          = "Gabriel Mariano Marcelino",
+    author_email                    = "gabriel.mm8@gmail.com",
+    description                     = "FloripaSat-I packet decoder",
+    long_description                = long_description,
+    long_description_content_type   = "text/markdown",
+    license                         = "GPLv3",
+    url                             = "https://github.com/floripasat/fsat-decoder",
+    packages                        = setuptools.find_packages(),
+    install_requires                = ['gi','scipy'],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "Operating System :: OS Independent",
+    ],
+)
